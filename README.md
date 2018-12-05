@@ -1,4 +1,5 @@
 # mongoose-trigger
+
 [![Build Status](https://travis-ci.org/crsten/mongoose-trigger.svg?branch=master&style=flat-square)](https://travis-ci.org/crsten/mongoose-trigger)
 [![npm](https://img.shields.io/npm/dt/mongoose-trigger.svg?style=flat-square)](https://www.npmjs.com/package/mongoose-trigger)
 [![npm](https://img.shields.io/npm/v/mongoose-trigger.svg?style=flat-square)](https://www.npmjs.com/package/mongoose-trigger)
@@ -14,15 +15,15 @@ This modules lets you attach event listeners directly to your models and emit ev
 ## Usage
 
 ```js
-const mongoose = require('mongoose');
-const Schema = mongoose.Schema;
-const MongooseTrigger = require('mongoose-trigger');
+const mongoose = require('mongoose')
+const Schema = mongoose.Schema
+const MongooseTrigger = require('mongoose-trigger')
 
 let UserSchema = new Schema({
   name: String,
   email: String,
-  something: Array
-});
+  something: Array,
+})
 
 const UserEvents = MongooseTrigger(UserSchema, {
   events: {
@@ -30,30 +31,30 @@ const UserEvents = MongooseTrigger(UserSchema, {
       select: 'email skills',
       populate: {
         path: 'skills',
-        select: 'name'
-      }
+        select: 'name',
+      },
     },
     update: {
-      populate: 'skills'
+      populate: 'skills',
     },
-    remove: false
+    remove: false,
   },
   partials: [
     {
       eventName: 'custom_event',
       triggers: 'name',
       select: 'name email',
-      populate: 'something' //if it is a reference...
-    }
+      populate: 'something', //if it is a reference...
+    },
   ],
-  debug: false
-});
+  debug: false,
+})
 
-UserEvents.on('create', data => console.log('[create] says:', data));
-UserEvents.on('update', data => console.log('[update] says:', data));
-UserEvents.on('partial:skills', data => console.log('[partial:skills] says:', data));
-UserEvents.on('partial:x', data => console.log('[partial:x] says:', data));
-UserEvents.on('remove', data => console.log('[remove] says:', data));
+UserEvents.on('create', data => console.log('[create] says:', data))
+UserEvents.on('update', data => console.log('[update] says:', data))
+UserEvents.on('partial:skills', data => console.log('[partial:skills] says:', data))
+UserEvents.on('partial:x', data => console.log('[partial:x] says:', data))
+UserEvents.on('remove', data => console.log('[remove] says:', data))
 ```
 
 ## Initialization
@@ -61,21 +62,21 @@ UserEvents.on('remove', data => console.log('[remove] says:', data));
 Call `mongoose-trigger` as a function to initialize.
 It takes 2 arguments:
 
-* Schema
-* Options
+- Schema
+- Options
 
 And returns an instance of [Node Events](https://nodejs.org/api/events.html) which you can attach listeners to.
 
 The following events are supported:
 
-* create
-* update
-* remove
-* partials (you're free to define those and they are prefixed with 'partial')
+- create
+- update
+- remove
+- partials (you're free to define those and they are prefixed with 'partial')
 
 ```js
-const Listener = MongooseTrigger(YourSchema, YourOptions);
-Listener.on('partial:custom_event', data => console.log('do something...'));
+const Listener = MongooseTrigger(YourSchema, YourOptions)
+Listener.on('partial:custom_event', data => console.log('do something...'))
 ```
 
 ## Options
@@ -132,8 +133,8 @@ partials: [
     eventName: 'custom_eventname',
     triggers: 'name email',
     select: 'email',
-    populate: 'something'
-  }
+    populate: 'something',
+  },
 ]
 ```
 
@@ -145,9 +146,9 @@ partials: [
     select: 'something name',
     populate: {
       path: 'something',
-      select: 'random'
-    }
-  }
+      select: 'random',
+    },
+  },
 ]
 ```
 
