@@ -44,6 +44,21 @@ let UserEvents = MongooseTrigger(userSchema, {
       triggers: 'skills',
       select: 'skills.usefull',
     },
+    {
+      eventName: 'FunctionTrial',
+      triggers: doc => {
+        let orArray = doc.skills.map(skill => ({
+          _id: skill,
+        }))
+        let query = { $or: orArray }
+        return mongoose
+          .model('Skill')
+          .find(query)
+          .then(skills => skills.some(skill => skill.usefull === true))
+      },
+      select: 'name skills',
+      populate: 'skills',
+    },
   ],
   debug: true,
 })
@@ -52,6 +67,7 @@ UserEvents.on('create', data => console.log('[create] says:', data))
 UserEvents.on('update', data => console.log('[update] says:', data))
 UserEvents.on('partial:skills', data => console.log('[partial:skills] says:', data))
 UserEvents.on('partial:x', data => console.log('[partial:x] says:', data))
+UserEvents.on('partial:FunctionTrial', data => console.log('[partial:FunctionTrial] says:', data))
 UserEvents.on('remove', data => console.log('[remove] says:', data))
 
 module.exports = {

@@ -28,9 +28,10 @@ module.exports = exports = function MongooseTrigger(schema, options) {
       let modifiedPartials = new Set()
 
       options.partials.forEach(partial => {
-        partial.triggers.split(' ').forEach(key => {
-          if (this.isModified(key)) modifiedPartials.add(key)
-        })
+        if (typeof partial.triggers === 'string')
+          partial.triggers.split(' ').forEach(key => {
+            if (this.isModified(key)) modifiedPartials.add(key)
+          })
       })
 
       if (modifiedPartials.size) this.modifiedPartials = [...modifiedPartials]
@@ -85,9 +86,13 @@ module.exports = exports = function MongooseTrigger(schema, options) {
 
     if (!this.wasNew && this.modifiedPartials) {
       options.partials
-        .filter(partial => Intersect(partial.triggers.split(' '), this.modifiedPartials).length)
+        .filter(partial => {
+          if (typeof partial.triggers === 'string')
+            return Intersect(partial.triggers.split(' '), this.modifiedPartials).length
+          return false
+        })
         .forEach(partial => {
-          if (!partial.eventName) return console.warning(`EventName is not spesified`)
+          if (!partial.eventName) return console.warning(`EventName is not specified`)
           let EventName = `partial:${partial.eventName}`
 
           Fetcher(this, {
@@ -105,6 +110,35 @@ module.exports = exports = function MongooseTrigger(schema, options) {
               )
             })
             .catch(err => console.error('[ERROR] -> mongoose-trigger -> ', err))
+        })
+    }
+
+    if (!this.wasNew && options.partials) {
+      options.partials
+        .filter(partial => typeof partial.triggers === 'function')
+        .forEach(partial => {
+          if (!partial.eventName) return console.warning(`EventName is not specified`)
+          let EventName = `partial:${partial.eventName}`
+
+          partial.triggers(this).then(go => {
+            if (go) {
+              Fetcher(this, {
+                select: partial.select,
+                populate: partial.populate,
+              })
+                .then(res => {
+                  Emitter(
+                    res,
+                    {
+                      eventName: EventName,
+                      debug: options.debug,
+                    },
+                    emitter,
+                  )
+                })
+                .catch(err => console.error('[ERROR] -> mongoose-trigger -> ', err))
+            }
+          })
         })
     }
   })
