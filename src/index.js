@@ -84,60 +84,42 @@ module.exports = exports = function MongooseTrigger(schema, options) {
         .catch(err => console.error('[ERROR] -> mongoose-trigger -> ', err))
     }
 
-    if (!this.wasNew && this.modifiedPartials) {
-      options.partials
-        .filter(partial => {
+    if (
+      !this.wasNew &&
+      (this.modifiedPartials || options.partials.filter(p => typeof p.triggers === 'function').length)
+    ) {
+      Promise.all(
+        options.partials.map(partial => {
           if (typeof partial.triggers === 'string')
-            return Intersect(partial.triggers.split(' '), this.modifiedPartials).length
-          return false
-        })
-        .forEach(partial => {
-          if (!partial.eventName) return console.warning(`EventName is not specified`)
-          let EventName = `partial:${partial.eventName}`
+            return Promise.resolve(
+              Intersect(partial.triggers.split(' '), this.modifiedPartials).length ? partial : null,
+            )
+          if (typeof partial.triggers === 'function')
+            return Promise.resolve(partial.triggers(this)).then(state => (state ? partial : null))
+          return Promise.resolve(null)
+        }),
+      )
+        .then(partials => partials.filter(Boolean))
+        .then(partials => {
+          partials.forEach(partial => {
+            if (!partial.eventName) return console.warning(`EventName is not specified`)
+            let EventName = `partial:${partial.eventName}`
 
-          Fetcher(this, {
-            select: partial.select,
-            populate: partial.populate,
-          })
-            .then(res => {
-              Emitter(
-                res,
-                {
-                  eventName: EventName,
-                  debug: options.debug,
-                },
-                emitter,
-              )
+            Fetcher(this, {
+              select: partial.select,
+              populate: partial.populate,
             })
-            .catch(err => console.error('[ERROR] -> mongoose-trigger -> ', err))
-        })
-    }
-
-    if (!this.wasNew && options.partials) {
-      options.partials
-        .filter(partial => typeof partial.triggers === 'function')
-        .forEach(partial => {
-          if (!partial.eventName) return console.warning(`EventName is not specified`)
-          let EventName = `partial:${partial.eventName}`
-
-          partial.triggers(this).then(go => {
-            if (go) {
-              Fetcher(this, {
-                select: partial.select,
-                populate: partial.populate,
+              .then(res => {
+                Emitter(
+                  res,
+                  {
+                    eventName: EventName,
+                    debug: options.debug,
+                  },
+                  emitter,
+                )
               })
-                .then(res => {
-                  Emitter(
-                    res,
-                    {
-                      eventName: EventName,
-                      debug: options.debug,
-                    },
-                    emitter,
-                  )
-                })
-                .catch(err => console.error('[ERROR] -> mongoose-trigger -> ', err))
-            }
+              .catch(err => console.error('[ERROR] -> mongoose-trigger -> ', err))
           })
         })
     }

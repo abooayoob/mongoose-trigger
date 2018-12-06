@@ -47,14 +47,7 @@ let UserEvents = MongooseTrigger(userSchema, {
     {
       eventName: 'FunctionTrial',
       triggers: doc => {
-        let orArray = doc.skills.map(skill => ({
-          _id: skill,
-        }))
-        let query = { $or: orArray }
-        return mongoose
-          .model('Skill')
-          .find(query)
-          .then(skills => skills.some(skill => skill.usefull === true))
+        return mongoose.model('Skill').count({ usefull: true, _id: doc.skills })
       },
       select: 'name skills',
       populate: 'skills',
